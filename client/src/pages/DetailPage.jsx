@@ -56,7 +56,7 @@ export default function DetailPage() {
     <div className="flex-1 overflow-y-auto no-scrollbar">
 
       {/* Hero image */}
-      <div className="relative h-56 lg:h-64 overflow-hidden bg-slate-900">
+      <div className="relative h-72 lg:h-[420px] overflow-hidden bg-slate-900">
         <img src={images[imgIdx]} alt={cafe.name}
           className="w-full h-full object-cover"
           onError={e => e.target.src = PLACEHOLDER_IMGS[0]}
@@ -229,14 +229,16 @@ export default function DetailPage() {
           <p className="text-[10px] text-slate-400 mt-0.5">Hà Nội</p>
         </div>
         {nearby.map(item => (
-          <Link key={item._id} to={`/cafe/${item._id}`} className={`flex items-center gap-3 px-4 py-3.5 border-b border-slate-50 transition-colors ${item._id===id?'bg-blue-50 border-l-2 border-l-blue-500':'hover:bg-slate-50'}`}>
+          <Link key={item._id} to={`/cafe/${item._id}`} className={`flex items-center gap-4 px-5 py-4 border-b border-slate-100 transition-colors ${item._id===id?'bg-blue-50 border-l-3 border-l-blue-500':'hover:bg-slate-50'}`}>
+          <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100"></div>
             <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-slate-100">
               <img src={item.images?.[0]||getImg(item._id)} alt={item.name} loading="lazy" className="w-full h-full object-cover"
                 onError={e=>e.target.src=PLACEHOLDER_IMGS[0]}/>
             </div>
             <div className="min-w-0">
-              <p className={`text-[12px] font-semibold truncate ${item._id===id?'text-blue-600':'text-slate-800'}`}>{item.name}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">⭐ {item.rating?.toFixed(1)} · {item.district||'HN'}</p>
+              <p className={`text-[14px] font-bold truncate ${item._id===id?'text-blue-600':'text-slate-800'}`}>{item.name}</p>
+              <p className="text-[12px] text-slate-500 mt-1">⭐ {item.rating?.toFixed(1)}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">📍 {item.district||'Hà Nội'}</p>
             </div>
           </Link>
         ))}

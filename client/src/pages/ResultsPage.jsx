@@ -3,13 +3,13 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useCafes } from '../hooks/useCafes'
 import CafeCard from '../components/cafe/CafeCard'
-import FilterPanel from '../components/search/FilterPanel'
+import FilterPanel, { FilterToggleButton } from '../components/search/FilterPanel'
 import { SkeletonList } from '../components/ui/Skeleton'
 
 const SORT_OPTS = [
   { value: 'rating',  label: '⭐ Đánh giá' },
-  { value: 'nearest', label: '📍 Gần nhất' },
-  { value: 'price',   label: '💰 Giá thấp' },
+  { value: 'nearest', label: '📍 Gần nhất'  },
+  { value: 'price',   label: '💰 Giá thấp'  },
 ]
 
 const PLACEHOLDER_IMGS = [
@@ -20,37 +20,36 @@ const PLACEHOLDER_IMGS = [
   'https://images.unsplash.com/photo-1525610553991-2bede1a236e2?w=200&q=80',
 ]
 function getImg(id) {
-  const h = id ? id.split('').reduce((a,c) => a+c.charCodeAt(0),0) : 0
+  const h = id ? id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) : 0
   return PLACEHOLDER_IMGS[h % PLACEHOLDER_IMGS.length]
 }
 
 export default function ResultsPage() {
   const isDesktop  = useMediaQuery('(min-width: 1024px)')
   const [params, setParams] = useSearchParams()
-  const [showFilter, setShowFilter] = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
   const [page, setPage] = useState(1)
   const LIMIT = 12
 
-  const q        = params.get('q') || ''
-  const sort     = params.get('sort') || 'rating'
+  const q         = params.get('q') || ''
+  const sort      = params.get('sort') || 'rating'
   const amenities = params.get('amenities') || ''
-  const maxDist  = params.get('maxDist') || ''
-  const price    = params.get('price') || ''
-  const lat      = params.get('lat')
-  const lng      = params.get('lng')
+  const maxDist   = params.get('maxDist') || ''
+  const price     = params.get('price') || ''
+  const lat       = params.get('lat')
+  const lng       = params.get('lng')
 
   useEffect(() => setPage(1), [q, sort, amenities, maxDist, price])
 
-  const filters = {
+  const { data, isLoading, isError, isFetching } = useCafes({
     ...(q && { q }),
     ...(lat && lng && { lat, lng }),
     sort, amenities, maxDist, price,
     limit: LIMIT, page,
-  }
+  })
 
-  const { data, isLoading, isError, isFetching } = useCafes(filters)
-  const cafes = data?.cafes || []
-  const total = data?.total || cafes.length
+  const cafes      = data?.cafes || []
+  const total      = data?.total || cafes.length
   const totalPages = Math.ceil(total / LIMIT)
   const filterCount = [amenities, maxDist, price].filter(Boolean).length
 
@@ -82,33 +81,29 @@ export default function ResultsPage() {
             </span>
           </Link>
 
-          {/* Result count */}
+          {/* Count */}
           <span className="glass px-3 py-2 rounded-xl text-[12px] font-bold text-white whitespace-nowrap border border-white/15">
             {isLoading ? '...' : `${total} quán`}
           </span>
 
-          {/* Filter button */}
-          {!isDesktop && (
-            <button onClick={() => setShowFilter(true)}
-              className="relative glass w-10 h-10 rounded-xl flex items-center justify-center text-white border border-white/15"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 10h10M11 16h2"/>
-              </svg>
-              {filterCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
-                  {filterCount}
-                </span>
-              )}
-            </button>
-          )}
+          {/* Filter toggle button */}
+          <FilterToggleButton
+            onClick={() => setFilterOpen(true)}
+            filterCount={filterCount}
+          />
         </div>
 
         {/* Sort chips */}
         <div className="max-w-7xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
           {SORT_OPTS.map(({ value, label }) => (
             <button key={value} onClick={() => setSort(value)}
-              className={`chip ${sort === value ? 'chip-active' : 'border-white/25 text-white/65 bg-white/8 hover:bg-white/15 hover:text-white'}`}
+              className={`
+                chip flex-shrink-0 transition-all duration-150
+                ${sort === value
+                  ? 'bg-white text-primary border-white shadow-sm'
+                  : 'border-white/25 text-white/70 bg-white/8 hover:bg-white/15 hover:text-white'
+                }
+              `}
             >
               {label}
             </button>
@@ -117,82 +112,76 @@ export default function ResultsPage() {
       </div>
 
       {/* ── Body ── */}
-      <div className="max-w-7xl mx-auto flex">
+      <div className="max-w-7xl mx-auto px-4 py-6">
 
-        {/* Desktop filter sidebar */}
-        {isDesktop && (
-          <aside className="w-[260px] flex-shrink-0 border-r border-slate-100 bg-white sticky top-[132px] h-[calc(100vh-132px)] overflow-y-auto no-scrollbar p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[14px] font-bold text-slate-800">Bộ lọc</p>
-              {filterCount > 0 && (
-                <span className="tag-teal">{filterCount} đang bật</span>
-              )}
-            </div>
-            <FilterPanel/>
-          </aside>
+        {/* Status bar */}
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-[13px] font-semibold text-slate-500">
+            {isLoading ? 'Đang tải...' : `${total} kết quả`}
+            {q && <span className="text-slate-800"> · "{q}"</span>}
+            {isFetching && !isLoading && <span className="text-blue-500 ml-2 animate-spin inline-block">↻</span>}
+          </p>
+          {filterCount > 0 && (
+            <button onClick={() => setFilterOpen(true)}
+              className="text-[11px] font-semibold text-blue-500 hover:text-blue-600">
+              {filterCount} bộ lọc đang bật ✕
+            </button>
+          )}
+        </div>
+
+        {/* Error */}
+        {isError && (
+          <div className="py-12 text-center rounded-2xl border border-red-100 bg-red-50">
+            <p className="text-[14px] font-semibold text-red-500">😕 Không thể tải dữ liệu</p>
+            <p className="text-[12px] text-red-400 mt-1">Kiểm tra kết nối và thử lại</p>
+          </div>
+        )}
+
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex flex-col gap-3">
+            {[1,2,3,4,5,6].map(i => <SkeletonList key={i} />)}
+          </div>
         )}
 
         {/* Results */}
-        <div className="flex-1 px-4 lg:px-6 py-6 min-w-0">
+        {!isLoading && !isError && (
+          <>
+            {cafes.length === 0 ? (
+              <EmptyResults q={q} />
+            ) : (
+              <div className="flex flex-col gap-3">
+                {cafes.map((cafe, i) => (
+                  <div key={cafe._id} className="fade-up" style={{ animationDelay: `${i * 30}ms` }}>
+                    <ResultRow cafe={cafe} getImg={getImg} />
+                  </div>
+                ))}
+              </div>
+            )}
 
-          {/* Status bar */}
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[13px] font-semibold text-slate-500">
-              {isLoading ? 'Đang tải...' : `${total} kết quả`}
-              {q && <span className="text-slate-800"> · "{q}"</span>}
-              {isFetching && !isLoading && <span className="text-blue-500 ml-2">↻</span>}
-            </p>
-          </div>
-
-          {/* Error */}
-          {isError && (
-            <div className="py-12 text-center rounded-2xl border border-red-100 bg-red-50">
-              <p className="text-[14px] font-semibold text-red-500">😕 Không thể tải dữ liệu</p>
-              <p className="text-[12px] text-red-400 mt-1">Kiểm tra kết nối và thử lại</p>
-            </div>
-          )}
-
-          {/* Loading */}
-          {isLoading && (
-            <div className="flex flex-col gap-3">
-              {[1,2,3,4,5,6].map(i => <SkeletonList key={i}/>)}
-            </div>
-          )}
-
-          {/* Results list */}
-          {!isLoading && !isError && (
-            <>
-              {cafes.length === 0 ? <EmptyResults q={q}/> : (
-                <div className="flex flex-col gap-3">
-                  {cafes.map((cafe, i) => (
-                    <div key={cafe._id} className="fade-up" style={{animationDelay:`${i*30}ms`}}>
-                      <ResultRow cafe={cafe} getImg={getImg}/>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 mt-8">
-                  <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}
-                    className="px-5 py-2.5 rounded-xl text-[12px] font-semibold border border-slate-200 text-slate-600 disabled:opacity-40 hover:border-blue-300 hover:text-blue-500 transition-all">
-                    ← Trước
-                  </button>
-                  <span className="text-[13px] font-bold text-slate-700 px-2">{page} / {totalPages}</span>
-                  <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}
-                    className="px-5 py-2.5 rounded-xl text-[12px] font-semibold bg-blue-500 text-white shadow-blue disabled:opacity-40 hover:bg-blue-600 transition-all">
-                    Tiếp →
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 mt-8">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                  className="px-5 py-2.5 rounded-xl text-[12px] font-semibold border border-slate-200 text-slate-600 disabled:opacity-40 hover:border-blue-300 hover:text-blue-500 transition-all">
+                  ← Trước
+                </button>
+                <span className="text-[13px] font-bold text-slate-700 px-2">{page} / {totalPages}</span>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                  className="px-5 py-2.5 rounded-xl text-[12px] font-semibold bg-blue-500 text-white shadow-blue disabled:opacity-40 hover:bg-blue-600 transition-all">
+                  Tiếp →
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Mobile filter sheet */}
-      {showFilter && <FilterPanel onClose={() => setShowFilter(false)}/>}
+      {/* Filter panel — slide từ trái */}
+      <FilterPanel
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+      />
     </div>
   )
 }
@@ -205,23 +194,23 @@ function ResultRow({ cafe, getImg }) {
       flex items-center gap-4 p-4
       bg-white rounded-2xl border border-slate-100
       shadow-card hover:shadow-hover
-      transition-all duration-250 hover:-translate-y-0.5
-      group
+      transition-all duration-250 hover:-translate-y-0.5 group
     ">
       <div className="w-[72px] h-[72px] rounded-xl overflow-hidden flex-shrink-0">
         <img src={imgUrl} alt={cafe.name} loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={e => e.target.src = 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&q=80'}
+          onError={e => e.target.src = PLACEHOLDER_IMGS[0]}
         />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-2 mb-0.5">
           <p className="text-[14px] font-bold text-slate-900 truncate flex-1">{cafe.name}</p>
           {isOpen !== null && (
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-              isOpen ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                     : 'bg-slate-50 text-slate-400 border border-slate-200'
-            }`}>{isOpen ? '● Mở' : '● Đóng'}</span>
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0
+              ${isOpen ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                       : 'bg-slate-50 text-slate-400 border border-slate-200'}`}>
+              {isOpen ? '● Mở' : '● Đóng'}
+            </span>
           )}
         </div>
         <p className="text-[11px] text-slate-400 truncate mb-2">📍 {cafe.address}</p>
@@ -233,9 +222,13 @@ function ResultRow({ cafe, getImg }) {
             <span className="text-[12px] font-bold text-slate-700">{cafe.rating?.toFixed(1) || '—'}</span>
             {cafe.ratingCount > 0 && <span className="text-[10px] text-slate-400">({cafe.ratingCount})</span>}
           </span>
-          {cafe.minPrice > 0 && <span className="text-[10px] text-slate-400">từ {(cafe.minPrice/1000).toFixed(0)}k</span>}
+          {cafe.minPrice > 0 && (
+            <span className="text-[10px] text-slate-400">từ {(cafe.minPrice / 1000).toFixed(0)}k</span>
+          )}
           <div className="flex gap-1 ml-auto">
-            {cafe.amenities?.slice(0,2).map(a => <span key={a} className="tag">{a}</span>)}
+            {cafe.amenities?.slice(0, 2).map(a => (
+              <span key={a} className="tag">{a}</span>
+            ))}
           </div>
         </div>
       </div>

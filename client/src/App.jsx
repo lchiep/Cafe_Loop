@@ -4,11 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
 import AppLayout from './components/layout/AppLayout'
 
-const HomePage     = lazy(() => import('./pages/HomePage'))
-const ResultsPage  = lazy(() => import('./pages/ResultsPage'))
-const DetailPage   = lazy(() => import('./pages/DetailPage'))
-const ProfilePage  = lazy(() => import('./pages/ProfilePage'))
+const HomePage      = lazy(() => import('./pages/HomePage'))
+const ResultsPage   = lazy(() => import('./pages/ResultsPage'))
+const DetailPage    = lazy(() => import('./pages/DetailPage'))
+const ProfilePage   = lazy(() => import('./pages/ProfilePage'))
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage'))
+const LoginPage     = lazy(() => import('./pages/LoginPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,12 +35,18 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            {/* Login — full page, không có layout */}
+            <Route path="/login" element={
+              <Suspense fallback={<PageLoader/>}><LoginPage /></Suspense>
+            }/>
+
+            {/* App routes — có Header + Sidebar */}
             <Route element={<AppLayout />}>
-              <Route index path="/" element={<Suspense fallback={<PageLoader />}><HomePage /></Suspense>} />
-              <Route path="/results" element={<Suspense fallback={<PageLoader />}><ResultsPage /></Suspense>} />
-              <Route path="/cafe/:id" element={<Suspense fallback={<PageLoader />}><DetailPage /></Suspense>} />
-              <Route path="/profile" element={<Suspense fallback={<PageLoader />}><ProfilePage /></Suspense>} />
-              <Route path="/favorites" element={<Suspense fallback={<PageLoader />}><FavoritesPage /></Suspense>} />
+              <Route index path="/" element={<Suspense fallback={<PageLoader/>}><HomePage /></Suspense>} />
+              <Route path="/results" element={<Suspense fallback={<PageLoader/>}><ResultsPage /></Suspense>} />
+              <Route path="/cafe/:id" element={<Suspense fallback={<PageLoader/>}><DetailPage /></Suspense>} />
+              <Route path="/profile" element={<Suspense fallback={<PageLoader/>}><ProfilePage /></Suspense>} />
+              <Route path="/favorites" element={<Suspense fallback={<PageLoader/>}><FavoritesPage /></Suspense>} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -20,6 +20,10 @@ async function run() {
     .map(r => {
       const parseImgs = (val) =>
         String(val || '').split('\n').map(s => s.trim()).filter(Boolean)
+
+      const images = parseImgs(r['🖼 Đường dẫn ảnh quán (tự động)'])
+      const drinks = parseImgs(r['🥤 Đường dẫn ảnh drink (tự động)'])
+
       return {
         name:        r['Tên quán']?.toString().trim(),
         address:     r['Địa chỉ']?.toString().trim(),
@@ -33,8 +37,8 @@ async function run() {
         featured:    String(r['Nổi bật']).toLowerCase()  === 'true',
         amenities:   String(r['Tiện ích']||'').split(',').map(s=>s.trim()).filter(Boolean),
         tags:        String(r['Tags']    ||'').split(',').map(s=>s.trim()).filter(Boolean),
-        images:      parseImgs(r['🖼 Đường dẫn ảnh quán (tự động)']),
-        drinks:      parseImgs(r['🥤 Đường dẫn ảnh drink (tự động)']),
+        images,
+        drinks,
         location:    { type: 'Point', coordinates: [105.8412, 21.0285] },
       }
     })
@@ -44,24 +48,30 @@ async function run() {
   console.log('✅ MongoDB connected\n')
 
   let created = 0, updated = 0, errors = 0
+
   for (const cafe of cafes) {
     try {
       const exists = await Cafe.findOne({ name: cafe.name })
       if (exists) {
         await Cafe.findByIdAndUpdate(exists._id, { $set: cafe })
         updated++
-        console.log(`  🔄 Cập nhật : ${cafe.name} (${cafe.images.length} ảnh + ${cafe.drinks.length} drink)`)
+        console.log(`  🔄 ${cafe.name} → ${cafe.images.length} ảnh + ${cafe.drinks.length} drink`)
       } else {
         await Cafe.create(cafe)
         created++
-        console.log(`  ➕ Thêm mới : ${cafe.name} (${cafe.images.length} ảnh + ${cafe.drinks.length} drink)`)
+        console.log(`  ➕ ${cafe.name} → ${cafe.images.length} ảnh + ${cafe.drinks.length} drink`)
       }
     } catch (err) {
       errors++
-      console.error(`  ❌ Lỗi : ${cafe.name} — ${err.message}`)
+      console.error(`  ❌ ${cafe.name}: ${err.message}`)
     }
   }
-  console.log(`\n✅ Import hoàn tất! ➕${created} mới  🔄${updated} cập nhật  ❌${errors} lỗi`)
+
+  console.log(`
+━━━━━━━━━━━━━━━━━━━━
+✅ Xong! ➕${created} mới  🔄${updated} update  ❌${errors} lỗi
+━━━━━━━━━━━━━━━━━━━━`)
+
   await mongoose.disconnect()
   process.exit(0)
 }

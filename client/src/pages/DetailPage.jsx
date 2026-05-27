@@ -143,6 +143,7 @@ export default function DetailPage() {
   const [fav,      setFav]      = useState(false)
   const [favAnim,  setFavAnim]  = useState(false)
   const [imgIdx,   setImgIdx]   = useState(0)
+  const [drinkIdx, setDrinkIdx] = useState(0)
   const [tab,      setTab]      = useState('Tổng quan')
   const [lightbox, setLightbox] = useState(null)  // null | { list, index }
 
@@ -304,116 +305,239 @@ export default function DetailPage() {
       {/* ── Tab content ── */}
       <div className="px-4 pb-6 pt-5">
 
-        {/* ── Tổng quan ── */}
+        {/* ══════════════════════════════
+            Tab: Tổng quan — Bento Grid
+        ══════════════════════════════ */}
         {tab === 'Tổng quan' && (
-          <div className="fade-in flex flex-col gap-5">
+          <div className="fade-in">
 
-            {/* Hours */}
-            <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-blue-50 to-slate-50 rounded-2xl border border-blue-100">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-lg flex-shrink-0 shadow-[0_4px_12px_rgba(59,130,246,0.35)]">🕐</div>
-              <div>
-                <p className="text-[13px] font-semibold text-slate-700">Giờ mở cửa</p>
-                <p className="text-[12px] text-slate-400 mt-0.5">
-                  {cafe.isOpen24h ? '24/7 — Mở cả ngày lẫn đêm' : `${cafe.openTime || '07:00'} – ${cafe.closeTime || '22:00'}`}
-                </p>
-              </div>
-            </div>
+            {/* ══ BENTO GRID ══
+                Left 50%  : 🥤 Drink (ảnh menu)
+                Right 50% : top 15% Tiện ích | mid 20% Tags | bottom 15% Map
+            ══════════════ */}
+            <div className="flex gap-3 h-[420px] mb-3">
 
-            {/* Amenities */}
-            {cafe.amenities?.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-4 rounded-full bg-gradient-to-b from-cyan-400 to-blue-500" />
-                  <p className="text-[13px] font-bold text-slate-800">Tiện ích</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {cafe.amenities.map((a, i) => (
-                    <span key={a} className={`
-                      flex items-center gap-1.5 px-3.5 py-2 rounded-xl
-                      text-[12px] font-semibold
-                      bg-gradient-to-r ${AM_COLORS[i % AM_COLORS.length]}
-                      border backdrop-blur-sm
-                      shadow-[0_2px_8px_rgba(0,0,0,0.06)]
-                      hover:scale-105 hover:shadow-md transition-all duration-150
-                    `}>
-                      {A_ICON[a] || '✓'} {A_LABEL[a] || a}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+              {/* ── LEFT: Drink carousel ── */}
+              <div className="flex-1 relative overflow-hidden rounded-2xl
+                bg-white/10 backdrop-blur-xl
+                border border-white/25
+                shadow-[0_4px_24px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.3)]
+                group
+              ">
+                {drinks.length > 0 ? (
+                  <>
+                    {/* Main image — clickable → lightbox */}
+                    <button
+                      onClick={() => setLightbox({ list: drinks, index: drinkIdx })}
+                      className="absolute inset-0 w-full h-full"
+                    >
+                      <img
+                        src={drinks[drinkIdx]} alt={`Đồ uống ${drinkIdx + 1}`}
+                        className="w-full h-full object-cover transition-all duration-500"
+                        onError={e => { e.target.src = PH[0] }}
+                      />
+                    </button>
 
-            {/* Tags — Aurora UI */}
-            {cafe.tags?.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-4 rounded-full bg-gradient-to-b from-violet-400 to-pink-500" />
-                  <p className="text-[13px] font-bold text-slate-800">Đặc điểm</p>
-                </div>
-                <div className="relative p-3 rounded-2xl overflow-hidden">
-                  {/* Aurora blobs */}
-                  <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-                    <div className="absolute -top-4 -left-4 w-24 h-24 bg-cyan-400/20 rounded-full blur-xl" />
-                    <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-violet-400/20 rounded-full blur-xl" />
-                    <div className="absolute top-1/2 left-1/3 w-16 h-16 bg-rose-400/15 rounded-full blur-lg" />
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm border border-white/40 rounded-2xl" />
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent pointer-events-none"/>
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"/>
+
+                    {/* Label top-left */}
+                    <div className="absolute top-3 left-3 z-10 pointer-events-none">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black text-white
+                        bg-black/30 backdrop-blur-md border border-white/20">
+                        🥤 Menu ảnh
+                      </span>
+                    </div>
+
+                    {/* Counter top-right */}
+                    <div className="absolute top-3 right-3 z-10 pointer-events-none">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold text-white
+                        bg-black/30 backdrop-blur-md border border-white/20">
+                        {drinkIdx + 1} / {drinks.length}
+                      </span>
+                    </div>
+
+                    {/* Prev / Next arrows */}
+                    {drinks.length > 1 && (
+                      <>
+                        <button
+                          onClick={e => { e.stopPropagation(); setDrinkIdx(i => (i - 1 + drinks.length) % drinks.length) }}
+                          className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20
+                            w-9 h-9 rounded-full bg-black/35 border border-white/20
+                            flex items-center justify-center text-white text-lg
+                            backdrop-blur-md hover:bg-black/55 transition-all">
+                          ‹
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); setDrinkIdx(i => (i + 1) % drinks.length) }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20
+                            w-9 h-9 rounded-full bg-black/35 border border-white/20
+                            flex items-center justify-center text-white text-lg
+                            backdrop-blur-md hover:bg-black/55 transition-all">
+                          ›
+                        </button>
+                      </>
+                    )}
+
+                    {/* Bottom: dot nav + thumbnail strip */}
+                    <div className="absolute bottom-0 left-0 right-0 z-10 px-3 pb-3">
+                      {/* Dot indicators */}
+                      <div className="flex justify-center gap-1 mb-2">
+                        {drinks.map((_, i) => (
+                          <button key={i}
+                            onClick={e => { e.stopPropagation(); setDrinkIdx(i) }}
+                            className={`h-1 rounded-full transition-all duration-200
+                              ${i === drinkIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'}`}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Thumbnail strip */}
+                      <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                        {drinks.map((url, i) => (
+                          <button key={i}
+                            onClick={e => { e.stopPropagation(); setDrinkIdx(i) }}
+                            className={`
+                              flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden
+                              border-2 transition-all duration-200
+                              ${i === drinkIdx
+                                ? 'border-white scale-105 shadow-[0_2px_8px_rgba(255,255,255,0.3)]'
+                                : 'border-white/30 opacity-60 hover:opacity-90'
+                              }
+                            `}>
+                            <img src={url} alt="" loading="lazy" className="w-full h-full object-cover"
+                              onError={e => { e.target.src = PH[0] }}/>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="text-5xl mb-3 opacity-40">🥤</div>
+                    <p className="text-[12px] text-white/40 font-medium">Chưa có ảnh menu</p>
                   </div>
-                  <div className="relative flex flex-wrap gap-2">
-                    {cafe.tags.map((t, i) => {
+                )}
+              </div>
+
+              {/* ── RIGHT: 3 stacked cards ── */}
+              <div className="flex flex-col gap-3" style={{ width: '46%' }}>
+
+                {/* TOP: Tiện ích */}
+                <div className="relative overflow-hidden rounded-2xl p-3.5 flex-1
+                  bg-white/10 backdrop-blur-xl
+                  border border-white/25
+                  shadow-[0_4px_24px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.3)]
+                  hover:bg-white/16 transition-all duration-300 group
+                ">
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute -top-4 -right-4 w-20 h-20 bg-cyan-400/20 rounded-full blur-xl"/>
+                    <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-blue-400/15 rounded-full blur-lg"/>
+                  </div>
+                  <p className="relative text-[9px] font-black text-white/50 uppercase tracking-widest mb-2">
+                    📡 Tiện ích
+                  </p>
+                  <div className="relative flex flex-wrap gap-1.5">
+                    {cafe.amenities?.length > 0 ? cafe.amenities.map((a, i) => (
+                      <span key={a} className={`
+                        flex items-center gap-1 px-2.5 py-1 rounded-lg
+                        text-[10px] font-semibold
+                        bg-gradient-to-r ${AM_COLORS[i % AM_COLORS.length]}
+                        border backdrop-blur-sm
+                        hover:scale-105 transition-all duration-150
+                      `}>
+                        {A_ICON[a] || '✓'} {A_LABEL[a] || a}
+                      </span>
+                    )) : (
+                      <p className="text-[11px] text-white/30">Chưa cập nhật</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* MID: Tags */}
+                <div className="relative overflow-hidden rounded-2xl p-3.5
+                  bg-white/10 backdrop-blur-xl
+                  border border-white/25
+                  shadow-[0_4px_24px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.3)]
+                  hover:bg-white/16 transition-all duration-300
+                " style={{ flex: '1.4' }}>
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute -top-6 -left-6 w-24 h-24 bg-violet-400/20 rounded-full blur-2xl"/>
+                    <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-rose-400/15 rounded-full blur-xl"/>
+                  </div>
+                  <p className="relative text-[9px] font-black text-white/50 uppercase tracking-widest mb-2">
+                    ✨ Đặc điểm
+                  </p>
+                  <div className="relative flex flex-wrap gap-1.5">
+                    {cafe.tags?.length > 0 ? cafe.tags.map((t, i) => {
                       const { bg, sh } = TAG_COLORS[i % TAG_COLORS.length]
                       return (
-                        <span key={t} className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold text-white ${bg} ${sh} hover:scale-105 hover:brightness-110 transition-all duration-150`}>
+                        <span key={t} className={`
+                          px-2.5 py-1 rounded-full
+                          text-[10px] font-bold text-white
+                          ${bg} ${sh}
+                          hover:scale-105 hover:brightness-110
+                          transition-all duration-150
+                        `}>
                           {t}
                         </span>
                       )
-                    })}
+                    }) : (
+                      <p className="text-[11px] text-white/30">Chưa cập nhật</p>
+                    )}
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Drink preview — horizontal scroll */}
-            {drinks.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1 h-4 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
-                    <p className="text-[13px] font-bold text-slate-800">Xem trước menu</p>
+                {/* BOTTOM: Map CTA */}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.address)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="relative overflow-hidden rounded-2xl p-3.5 flex-1
+                    bg-gradient-to-r from-blue-500/80 to-cyan-500/80
+                    backdrop-blur-xl
+                    border border-white/25
+                    shadow-[0_4px_24px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.3)]
+                    hover:from-blue-500 hover:to-cyan-500
+                    hover:shadow-[0_6px_28px_rgba(59,130,246,0.5)]
+                    transition-all duration-300 group
+                    flex items-center justify-center gap-2
+                  "
+                >
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute -top-4 right-0 w-20 h-20 bg-white/10 rounded-full blur-xl"/>
                   </div>
-                  <button onClick={() => setTab('Ảnh')}
-                    className="text-[11px] font-semibold text-blue-500 hover:text-blue-600">
+                  <span className="text-lg">🗺</span>
+                  <span className="relative text-[13px] font-black text-white drop-shadow">
+                    Xem đường đi
+                  </span>
+                </a>
+
+              </div>
+            </div>
+
+            {/* ── Reviews preview (below bento) ── */}
+            {reviews.length > 0 && (
+              <div className="rounded-2xl overflow-hidden
+                bg-white/8 backdrop-blur-xl
+                border border-white/20
+                shadow-[0_4px_20px_rgba(0,0,0,0.12)]">
+                <div className="flex justify-between items-center px-4 py-3 border-b border-white/10">
+                  <p className="text-[12px] font-bold text-white/80">💬 Đánh giá gần đây</p>
+                  <button onClick={() => setTab('Đánh giá')}
+                    className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
                     Xem tất cả →
                   </button>
                 </div>
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
-                  {drinks.map((url, i) => (
-                    <button key={i}
-                      onClick={() => setLightbox({ list: drinks, index: i })}
-                      className="flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.03] transition-all duration-200">
-                      <img src={url} alt={`Menu ${i + 1}`} loading="lazy"
-                        className="w-full h-full object-cover"
-                        onError={e => { e.target.src = PH[0] }} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Reviews preview */}
-            {reviews.length > 0 && (
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <p className="text-[13px] font-bold text-slate-800">Đánh giá gần đây</p>
-                  <button onClick={() => setTab('Đánh giá')}
-                    className="text-[11px] font-semibold text-blue-500 hover:text-blue-600">Xem tất cả →</button>
-                </div>
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col divide-y divide-white/8">
                   {reviews.slice(0, 2).map((r, i) => <ReviewCard key={i} review={r} />)}
                 </div>
               </div>
             )}
+
           </div>
         )}
+
 
         {/* ── Đánh giá ── */}
         {tab === 'Đánh giá' && (

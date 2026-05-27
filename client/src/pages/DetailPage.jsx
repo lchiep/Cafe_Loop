@@ -6,407 +6,109 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 import { favoriteApi } from '../services/api'
 import { SkeletonDetail } from '../components/ui/Skeleton'
 
-const PLACEHOLDER_IMGS = [
+/* ── Placeholder images ── */
+const PH = [
   'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80',
   'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&q=80',
   'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=800&q=80',
   'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80',
-  'https://images.unsplash.com/photo-1525610553991-2bede1a236e2?w=800&q=80',
 ]
-
-function getImg(id, i = 0) {
+const getImg = (id, i = 0) => {
   const h = id ? id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) : 0
-  return PLACEHOLDER_IMGS[(h + i) % PLACEHOLDER_IMGS.length]
+  return PH[(h + i) % PH.length]
 }
 
-const AMENITY_ICONS  = { wifi:'📶', ac:'❄️', outlet:'🔌', parking:'🅿️', pet:'🐾', outdoor:'🌿' }
-const AMENITY_LABELS = { wifi:'Wi-Fi', ac:'Máy lạnh', outlet:'Ổ cắm', parking:'Đỗ xe', pet:'Pet-friendly', outdoor:'Ngoài trời' }
+/* ── Amenity maps ── */
+const A_ICON  = { wifi:'📶', ac:'❄️', outlet:'🔌', parking:'🅿️', pet:'🐾', outdoor:'🌿' }
+const A_LABEL = { wifi:'Wi-Fi', ac:'Máy lạnh', outlet:'Ổ cắm', parking:'Đỗ xe', pet:'Pet-friendly', outdoor:'Ngoài trời' }
 
-/* ── Lightbox component ── */
+/* ── Tag colors (Aurora) ── */
+const TAG_COLORS = [
+  { bg: 'bg-gradient-to-r from-cyan-500 to-blue-600',     sh: 'shadow-[0_2px_14px_rgba(6,182,212,0.55)]'   },
+  { bg: 'bg-gradient-to-r from-fuchsia-600 to-pink-600',  sh: 'shadow-[0_2px_14px_rgba(192,38,211,0.55)]'  },
+  { bg: 'bg-gradient-to-r from-rose-500 to-red-600',      sh: 'shadow-[0_2px_14px_rgba(244,63,94,0.55)]'   },
+  { bg: 'bg-gradient-to-r from-amber-500 to-orange-600',  sh: 'shadow-[0_2px_14px_rgba(245,158,11,0.55)]'  },
+  { bg: 'bg-gradient-to-r from-emerald-500 to-teal-600',  sh: 'shadow-[0_2px_14px_rgba(16,185,129,0.55)]'  },
+  { bg: 'bg-gradient-to-r from-violet-600 to-indigo-600', sh: 'shadow-[0_2px_14px_rgba(124,58,237,0.55)]'  },
+]
+
+/* ── Amenity tag colors ── */
+const AM_COLORS = [
+  'from-cyan-400/20 to-blue-500/20 border-cyan-300/40 text-cyan-700',
+  'from-violet-400/20 to-purple-500/20 border-violet-300/40 text-violet-700',
+  'from-emerald-400/20 to-teal-500/20 border-emerald-300/40 text-emerald-700',
+  'from-amber-400/20 to-orange-400/20 border-amber-300/40 text-amber-700',
+  'from-rose-400/20 to-pink-400/20 border-rose-300/40 text-rose-700',
+  'from-blue-400/20 to-indigo-500/20 border-blue-300/40 text-blue-700',
+]
+
+/* ── checkOpen helper ── */
+function checkOpen(cafe) {
+  if (cafe.isOpen24h) return true
+  if (!cafe.openTime || !cafe.closeTime) return null
+  const now = new Date()
+  const [oh, om] = cafe.openTime.split(':').map(Number)
+  const [ch, cm] = cafe.closeTime.split(':').map(Number)
+  const mins = now.getHours() * 60 + now.getMinutes()
+  return mins >= oh * 60 + om && mins <= ch * 60 + cm
+}
+
+/* ══════════════════════════════════════════
+   Lightbox
+══════════════════════════════════════════ */
 function Lightbox({ images, index, onClose }) {
   const [cur, setCur] = useState(index)
-  const prev = () => setCur(i => (i - 1 + images.length) % images.length)
-  const next = () => setCur(i => (i + 1) % images.length)
+  const prev = (e) => { e.stopPropagation(); setCur(i => (i - 1 + images.length) % images.length) }
+  const next = (e) => { e.stopPropagation(); setCur(i => (i + 1) % images.length) }
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
-      onClick={onClose}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-md" />
 
       {/* Close */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-      >
+      <button onClick={onClose}
+        className="absolute top-4 right-4 z-20 w-11 h-11 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
 
       {/* Counter */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 glass px-4 py-1.5 rounded-full text-white text-[12px] font-semibold border border-white/20">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 bg-white/10 border border-white/20 backdrop-blur-sm rounded-full text-white text-[12px] font-semibold">
         {cur + 1} / {images.length}
       </div>
 
       {/* Image */}
-      <div className="relative z-10 max-w-4xl max-h-[85vh] w-full mx-4" onClick={e => e.stopPropagation()}>
-        <img
-          src={images[cur]}
-          alt={`Ảnh ${cur + 1}`}
-          className="w-full h-full object-contain rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.5)]"
-          style={{ maxHeight: '85vh' }}
-          onError={e => { e.target.src = PLACEHOLDER_IMGS[0] }}
-        />
+      <div className="relative z-10 max-w-5xl max-h-[88vh] w-full mx-6" onClick={e => e.stopPropagation()}>
+        <img src={images[cur]} alt="" style={{ maxHeight: '88vh' }}
+          className="w-full h-full object-contain rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.7)]"
+          onError={e => { e.target.src = PH[0] }} />
       </div>
 
-      {/* Prev / Next */}
       {images.length > 1 && (
         <>
-          <button
-            onClick={e => { e.stopPropagation(); prev() }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-2xl hover:bg-white/20 transition-colors"
-          >‹</button>
-          <button
-            onClick={e => { e.stopPropagation(); next() }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-2xl hover:bg-white/20 transition-colors"
-          >›</button>
+          <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-2xl hover:bg-white/20 transition-all">‹</button>
+          <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-2xl hover:bg-white/20 transition-all">›</button>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+            {images.map((_, i) => (
+              <button key={i} onClick={e => { e.stopPropagation(); setCur(i) }}
+                className={`h-1.5 rounded-full transition-all ${i === cur ? 'w-6 bg-white' : 'w-1.5 bg-white/35 hover:bg-white/60'}`} />
+            ))}
+          </div>
         </>
       )}
-
-      {/* Dot nav */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-        {images.map((_, i) => (
-          <button
-            key={i}
-            onClick={e => { e.stopPropagation(); setCur(i) }}
-            className={`h-1.5 rounded-full transition-all ${i === cur ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`}
-          />
-        ))}
-      </div>
     </div>
   )
 }
 
-export default function DetailPage() {
-  const { id }    = useParams()
-  const navigate  = useNavigate()
-  const isDesktop = useMediaQuery('(min-width: 1024px)')
-
-  const [fav, setFav]           = useState(false)
-  const [imgIdx, setImgIdx]     = useState(0)
-  const [tab, setTab]           = useState('Tổng quan')
-  const [lightbox, setLightbox] = useState(null) // null | index
-
-  const { data: cafe, isLoading, isError } = useCafe(id)
-  const { data: reviews = [] }             = useReviews(id)
-  const { data: nearbyData }               = useCafes({ limit: 12, sort: 'rating' })
-  const nearby = nearbyData?.cafes || []
-
-  async function toggleFav(e) {
-    e.stopPropagation()
-    setFav(f => !f)
-    try { await favoriteApi.toggle(id) } catch { setFav(f => !f) }
-  }
-
-  if (isLoading) return <SkeletonDetail />
-  if (isError || !cafe) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
-      <div className="text-5xl mb-4">😕</div>
-      <p className="text-[15px] font-bold text-slate-700 mb-4">Không tìm thấy quán</p>
-      <button onClick={() => navigate(-1)}
-        className="bg-blue-500 text-white px-6 py-2.5 rounded-xl text-[13px] font-semibold shadow-blue">
-        ← Quay lại
-      </button>
-    </div>
-  )
-
-  const images = cafe.images?.length ? cafe.images : [getImg(cafe._id, 0), getImg(cafe._id, 1)]
-  const allImgs = [...images, ...(cafe.drinks || [])]
-  const isOpen = checkOpen(cafe)
-
-  const detail = (
-    <div className="flex-1 overflow-y-auto no-scrollbar">
-
-      {/* Hero image */}
-      <div className="relative h-72 lg:h-[420px] overflow-hidden bg-slate-900">
-        <img
-          src={images[imgIdx]} alt={cafe.name}
-          className="w-full h-full object-cover"
-          onError={e => { e.target.src = PLACEHOLDER_IMGS[0] }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/15 to-transparent" />
-
-        <button onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 z-10 w-9 h-9 glass border border-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-md">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/>
-          </svg>
-        </button>
-
-        <button onClick={toggleFav}
-          className={`absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition-all
-            ${fav ? 'bg-rose-500 border-rose-400' : 'glass border-white/20'}`}>
-          <svg className={`w-4 h-4 ${fav ? 'fill-white text-white' : 'fill-none text-white'}`}
-            stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-          </svg>
-        </button>
-
-        {images.length > 1 && (
-          <>
-            <button onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 glass border border-white/20 w-9 h-9 rounded-full flex items-center justify-center text-white text-xl backdrop-blur-md">‹</button>
-            <button onClick={() => setImgIdx(i => (i + 1) % images.length)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 glass border border-white/20 w-9 h-9 rounded-full flex items-center justify-center text-white text-xl backdrop-blur-md">›</button>
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {images.map((_, i) => (
-                <button key={i} onClick={() => setImgIdx(i)}
-                  className={`h-1.5 rounded-full transition-all ${i === imgIdx ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`}/>
-              ))}
-            </div>
-          </>
-        )}
-
-        <div className="absolute bottom-0 left-0 right-0 px-5 pb-5">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <h1 className="text-[22px] font-bold text-white leading-tight drop-shadow">{cafe.name}</h1>
-              <p className="text-[12px] text-white/65 mt-1">📍 {cafe.address}</p>
-            </div>
-            {isOpen !== null && (
-              <span className={`flex-shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-full
-                ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-slate-600/90 text-slate-200'}`}>
-                {isOpen ? '● Đang mở' : '● Đóng cửa'}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="mx-4 -mt-5 relative z-10 bg-white rounded-2xl border border-slate-100 shadow-card px-4 py-4 flex justify-around">
-        {[
-          { v: cafe.rating?.toFixed(1) || '—', l: 'Đánh giá', c: 'text-amber-500' },
-          { v: cafe.ratingCount || 0,           l: 'Review',   c: 'text-blue-500'  },
-          { v: cafe.isOpen24h ? '24h' : (cafe.closeTime || '—'), l: cafe.isOpen24h ? 'Giờ mở' : 'Đóng lúc', c: 'text-slate-700' },
-          { v: cafe.minPrice ? (cafe.minPrice / 1000).toFixed(0) + 'k' : 'Free', l: 'Giá từ', c: 'text-teal-500' },
-        ].map(({ v, l, c }) => (
-          <div key={l} className="text-center px-2">
-            <p className={`text-[17px] font-bold ${c}`}>{v}</p>
-            <p className="text-[9px] text-slate-400 font-medium mt-0.5">{l}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 px-4 py-4 border-b border-slate-100 overflow-x-auto no-scrollbar">
-        {['Tổng quan', 'Đánh giá', 'Ảnh'].map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`
-            px-5 py-2 rounded-full text-[12px] font-semibold flex-shrink-0 transition-all
-            ${tab === t ? 'bg-blue-500 text-white shadow-blue' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}
-          `}>
-            {t}
-            {t === 'Ảnh' && (
-              <span className="ml-1.5 text-[9px] opacity-70">({allImgs.length})</span>
-            )}
-            {t === 'Đánh giá' && reviews.length > 0 && (
-              <span className="ml-1.5 text-[9px] bg-white/25 px-1.5 py-0.5 rounded-full">{reviews.length}</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <div className="px-4 pb-6 pt-5">
-
-        {tab === 'Tổng quan' && (
-          <div className="fade-in">
-            <div className="flex items-center gap-3.5 p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-lg flex-shrink-0">🕐</div>
-              <div>
-                <p className="text-[13px] font-semibold text-slate-700">Giờ mở cửa</p>
-                <p className="text-[12px] text-slate-400 mt-0.5">
-                  {cafe.isOpen24h ? '24/7 — Mở cả ngày lẫn đêm' : `${cafe.openTime || '07:00'} – ${cafe.closeTime || '22:00'}`}
-                </p>
-              </div>
-            </div>
-
-            {cafe.amenities?.length > 0 && (
-              <div className="mb-5">
-                <p className="text-[13px] font-bold text-slate-800 mb-3">Tiện ích</p>
-                <div className="flex flex-wrap gap-2">
-                  {cafe.amenities.map(a => (
-                    <span key={a} className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-[12px] font-medium text-slate-700 shadow-sm">
-                      {AMENITY_ICONS[a] || '✓'} {AMENITY_LABELS[a] || a}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {cafe.tags?.length > 0 && (
-              <div className="mb-5">
-                <p className="text-[13px] font-bold text-slate-800 mb-3">Đặc điểm</p>
-                <div className="flex flex-wrap gap-2">
-                  {cafe.tags.map(t => <span key={t} className="tag-teal">{t}</span>)}
-                </div>
-              </div>
-            )}
-
-            {reviews.length > 0 && (
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <p className="text-[13px] font-bold text-slate-800">Đánh giá gần đây</p>
-                  <button onClick={() => setTab('Đánh giá')} className="text-[11px] font-semibold text-blue-500">Xem tất cả →</button>
-                </div>
-                <div className="flex flex-col gap-2.5">
-                  {reviews.slice(0, 2).map((r, i) => <ReviewCard key={i} review={r} />)}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab === 'Đánh giá' && (
-          <div className="fade-in flex flex-col gap-3">
-            {reviews.length === 0
-              ? <div className="py-10 text-center"><div className="text-3xl mb-2">💬</div><p className="text-[13px] text-slate-400">Chưa có đánh giá nào</p></div>
-              : reviews.map((r, i) => <ReviewCard key={i} review={r} />)
-            }
-          </div>
-        )}
-
-        {/* ── Tab Ảnh — click → lightbox ── */}
-        {tab === 'Ảnh' && (
-          <div className="fade-in">
-            {/* Ảnh quán */}
-            {images.length > 0 && (
-              <>
-                <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-3">
-                  🖼 Ảnh quán ({images.length})
-                </p>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-6">
-                  {images.map((url, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setLightbox({ list: allImgs, index: i })}
-                      className="aspect-square rounded-2xl overflow-hidden hover:opacity-90 hover:scale-[1.02] transition-all duration-200 shadow-sm"
-                    >
-                      <img src={url} alt={`Ảnh ${i + 1}`} loading="lazy"
-                        className="w-full h-full object-cover"
-                        onError={e => { e.target.src = PLACEHOLDER_IMGS[0] }}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Ảnh đồ uống */}
-            {cafe.drinks?.length > 0 && (
-              <>
-                <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-3">
-                  🥤 Đồ uống & Thực đơn ({cafe.drinks.length})
-                </p>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
-                  {cafe.drinks.map((url, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setLightbox({ list: allImgs, index: images.length + i })}
-                      className="aspect-square rounded-2xl overflow-hidden hover:opacity-90 hover:scale-[1.02] transition-all duration-200 shadow-sm"
-                    >
-                      <img src={url} alt={`Drink ${i + 1}`} loading="lazy"
-                        className="w-full h-full object-cover"
-                        onError={e => { e.target.src = PLACEHOLDER_IMGS[0] }}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {allImgs.length === 0 && (
-              <div className="py-10 text-center">
-                <div className="text-3xl mb-2">📷</div>
-                <p className="text-[13px] text-slate-400">Chưa có ảnh nào</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* CTA */}
-      <div className="px-4 pb-8 flex gap-3">
-        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.address)}`}
-          target="_blank" rel="noopener noreferrer"
-          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-[13px] font-bold py-4 rounded-2xl text-center shadow-blue transition-all hover:-translate-y-0.5">
-          🗺 Xem đường đi
-        </a>
-        <button onClick={toggleFav}
-          className={`w-14 rounded-2xl border-2 flex items-center justify-center transition-all
-            ${fav ? 'border-rose-300 bg-rose-50 text-rose-500' : 'border-slate-200 text-slate-400 hover:border-rose-200 hover:bg-rose-50'}`}>
-          <svg className={`w-5 h-5 ${fav ? 'fill-rose-500 text-rose-500' : 'fill-none'}`}
-            stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-          </svg>
-        </button>
-      </div>
-
-      {/* Lightbox */}
-      {lightbox && (
-        <Lightbox
-          images={lightbox.list}
-          index={lightbox.index}
-          onClose={() => setLightbox(null)}
-        />
-      )}
-    </div>
-  )
-
-  if (isDesktop) return (
-    <div className="flex h-[calc(100vh-64px)]">
-      <aside className="w-[300px] flex-shrink-0 border-r border-slate-100 bg-white overflow-y-auto no-scrollbar">
-        <div className="px-5 py-4 border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">
-          <p className="text-[14px] font-bold text-slate-800">Quán khác</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Hà Nội</p>
-        </div>
-        {nearby.map(item => (
-          <Link key={item._id} to={`/cafe/${item._id}`}
-            className={`flex items-center gap-4 px-5 py-4 border-b border-slate-100 transition-colors duration-150
-              ${item._id === id ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-slate-50'}`}>
-            <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100">
-              <img src={item.images?.[0] || getImg(item._id)} alt={item.name} loading="lazy"
-                className="w-full h-full object-cover"
-                onError={e => { e.target.src = PLACEHOLDER_IMGS[0] }}
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className={`text-[13px] font-bold truncate ${item._id === id ? 'text-blue-600' : 'text-slate-800'}`}>
-                {item.name}
-              </p>
-              <p className="text-[12px] text-amber-500 font-semibold mt-1">⭐ {item.rating?.toFixed(1)}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">📍 {item.district || 'Hà Nội'}</p>
-            </div>
-          </Link>
-        ))}
-      </aside>
-      {detail}
-    </div>
-  )
-
-  return detail
-}
-
+/* ══════════════════════════════════════════
+   ReviewCard
+══════════════════════════════════════════ */
 function ReviewCard({ review }) {
   const name  = review.author?.name || review.author || 'Ẩn danh'
   const stars = review.stars || 5
   return (
-    <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-card">
+    <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center gap-3 mb-2.5">
         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-[12px] flex-shrink-0">
           {name[0]?.toUpperCase() || '?'}
@@ -416,7 +118,7 @@ function ReviewCard({ review }) {
           <div className="flex gap-0.5 mt-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <svg key={i} className={`w-3 h-3 ${i < stars ? 'fill-amber-400' : 'fill-slate-200'}`} viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
             ))}
           </div>
@@ -430,12 +132,387 @@ function ReviewCard({ review }) {
   )
 }
 
-function checkOpen(cafe) {
-  if (cafe.isOpen24h) return true
-  if (!cafe.openTime || !cafe.closeTime) return null
-  const now = new Date()
-  const [oh, om] = cafe.openTime.split(':').map(Number)
-  const [ch, cm] = cafe.closeTime.split(':').map(Number)
-  const mins = now.getHours() * 60 + now.getMinutes()
-  return mins >= oh * 60 + om && mins <= ch * 60 + cm
+/* ══════════════════════════════════════════
+   DetailPage (main)
+══════════════════════════════════════════ */
+export default function DetailPage() {
+  const { id }    = useParams()
+  const navigate  = useNavigate()
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
+
+  const [fav,      setFav]      = useState(false)
+  const [favAnim,  setFavAnim]  = useState(false)
+  const [imgIdx,   setImgIdx]   = useState(0)
+  const [tab,      setTab]      = useState('Tổng quan')
+  const [lightbox, setLightbox] = useState(null)  // null | { list, index }
+
+  const { data: cafe,       isLoading, isError } = useCafe(id)
+  const { data: reviews = [] }                   = useReviews(id)
+  const { data: nearbyData }                     = useCafes({ limit: 12, sort: 'rating' })
+  const nearby = nearbyData?.cafes || []
+
+  async function toggleFav(e) {
+    e.stopPropagation()
+    const next = !fav
+    setFav(next)
+    setFavAnim(true)
+    setTimeout(() => setFavAnim(false), 600)
+    try { await favoriteApi.toggle(id) } catch { setFav(f => !f) }
+  }
+
+  /* ── Loading / Error ── */
+  if (isLoading) return <SkeletonDetail />
+  if (isError || !cafe) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+      <div className="text-5xl mb-4">😕</div>
+      <p className="text-[15px] font-bold text-slate-700 mb-4">Không tìm thấy quán</p>
+      <button onClick={() => navigate(-1)}
+        className="bg-blue-500 text-white px-6 py-2.5 rounded-xl text-[13px] font-semibold shadow-blue">
+        ← Quay lại
+      </button>
+    </div>
+  )
+
+  const images  = cafe.images?.length  ? cafe.images  : [getImg(cafe._id, 0), getImg(cafe._id, 1)]
+  const drinks  = cafe.drinks  || []
+  const allImgs = [...images, ...drinks]
+  const isOpen  = checkOpen(cafe)
+
+  /* ════════════════════════════════════════
+     Detail Panel (shared mobile + desktop)
+  ════════════════════════════════════════ */
+  const detail = (
+    <div className="flex-1 overflow-y-auto no-scrollbar">
+
+      {/* ── Hero ── */}
+      <div className="relative h-80 lg:h-[480px] overflow-hidden bg-slate-900">
+        <img
+          src={images[imgIdx]} alt={cafe.name}
+          className="w-full h-full object-cover transition-transform duration-700 scale-105 hover:scale-100"
+          onError={e => { e.target.src = PH[0] }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/30 via-transparent to-transparent" />
+
+        {/* Top controls */}
+        <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center">
+          <button onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-full bg-black/30 border border-white/20 flex items-center justify-center text-white backdrop-blur-md hover:bg-black/50 transition-all">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Heart */}
+          <div className="relative">
+            <button onClick={toggleFav} aria-label={fav ? 'Bỏ yêu thích' : 'Thêm yêu thích'}
+              className={`
+                w-12 h-12 rounded-full flex items-center justify-center
+                border-2 backdrop-blur-md transition-all duration-300
+                hover:scale-110 active:scale-90
+                ${fav
+                  ? 'bg-rose-500 border-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.6)]'
+                  : 'bg-black/30 border-white/30 hover:bg-rose-500/20 hover:border-rose-400/60'
+                }
+              `}>
+              <svg className={`w-5 h-5 transition-all duration-300 ${fav ? 'fill-white text-white scale-110' : 'fill-none text-white'}`}
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
+            {favAnim && fav && <span className="absolute inset-0 rounded-full bg-rose-400/40 animate-ping pointer-events-none" />}
+            {favAnim && fav && (
+              <div className="absolute inset-0 pointer-events-none">
+                {['❤️', '💕', '✨'].map((em, i) => (
+                  <span key={i} className="absolute text-[14px]"
+                    style={{ left: `${20 + i * 25}%`, top: '-8px', animation: `floatUp 0.6s ease-out ${i * 0.08}s forwards` }}>
+                    {em}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Image nav */}
+        {images.length > 1 && (
+          <>
+            <button onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/30 border border-white/20 flex items-center justify-center text-white text-xl backdrop-blur-sm hover:bg-black/50 transition-all">‹</button>
+            <button onClick={() => setImgIdx(i => (i + 1) % images.length)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/30 border border-white/20 flex items-center justify-center text-white text-xl backdrop-blur-sm hover:bg-black/50 transition-all">›</button>
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+              {images.map((_, i) => (
+                <button key={i} onClick={() => setImgIdx(i)}
+                  className={`h-1 rounded-full transition-all ${i === imgIdx ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Name overlay */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-8">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h1 className="text-[24px] font-bold text-white leading-tight drop-shadow-lg mb-2">{cafe.name}</h1>
+              <p className="text-[12px] text-white/65">📍 {cafe.address}</p>
+            </div>
+            {isOpen !== null && (
+              <span className={`flex-shrink-0 text-[11px] font-bold px-4 py-1.5 rounded-full backdrop-blur-sm border mb-1
+                ${isOpen ? 'bg-emerald-500/80 border-emerald-400/50 text-white' : 'bg-slate-700/80 border-slate-500/50 text-slate-200'}`}>
+                {isOpen ? '● Đang mở' : '● Đóng cửa'}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Stats — liquid glass ── */}
+      <div className="mx-4 -mt-8 relative z-20">
+        <div className="bg-white/15 backdrop-blur-2xl rounded-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.20),inset_0_1px_0_rgba(255,255,255,0.4)] px-5 py-5 flex justify-around">
+          {[
+            { v: cafe.rating?.toFixed(1) || '—', l: 'Đánh giá', c: 'text-amber-300',   icon: '⭐' },
+            { v: cafe.ratingCount || 0,           l: 'Review',   c: 'text-cyan-300',    icon: '💬' },
+            { v: cafe.isOpen24h ? '24h' : (cafe.closeTime || '—'), l: cafe.isOpen24h ? 'Giờ mở' : 'Đóng lúc', c: 'text-white', icon: '🕐' },
+            { v: cafe.minPrice ? `${(cafe.minPrice / 1000).toFixed(0)}k` : 'Free', l: 'Giá từ', c: 'text-emerald-300', icon: '💰' },
+          ].map(({ v, l, c, icon }, i) => (
+            <div key={l} className="text-center px-3 relative">
+              {i > 0 && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-px h-10 bg-white/20" />}
+              <p className="text-[13px] mb-1">{icon}</p>
+              <p className={`text-[22px] font-black ${c} drop-shadow-lg leading-none`}>{v}</p>
+              <p className="text-[10px] text-white/75 font-semibold mt-1.5 tracking-wide">{l}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Tabs ── */}
+      <div className="flex gap-1 px-4 py-4 border-b border-slate-100 overflow-x-auto no-scrollbar mt-4">
+        {['Tổng quan', 'Đánh giá', 'Ảnh'].map(t => (
+          <button key={t} onClick={() => setTab(t)} className={`
+            px-5 py-2 rounded-full text-[12px] font-semibold flex-shrink-0 transition-all duration-200
+            ${tab === t ? 'bg-blue-500 text-white shadow-[0_4px_12px_rgba(59,130,246,0.4)]' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}
+          `}>
+            {t}
+            {t === 'Ảnh' && <span className="ml-1.5 text-[9px] opacity-60">({allImgs.length})</span>}
+            {t === 'Đánh giá' && reviews.length > 0 && <span className="ml-1.5 text-[9px] bg-white/30 px-1.5 py-0.5 rounded-full">{reviews.length}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab content ── */}
+      <div className="px-4 pb-6 pt-5">
+
+        {/* ── Tổng quan ── */}
+        {tab === 'Tổng quan' && (
+          <div className="fade-in flex flex-col gap-5">
+
+            {/* Hours */}
+            <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-blue-50 to-slate-50 rounded-2xl border border-blue-100">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-lg flex-shrink-0 shadow-[0_4px_12px_rgba(59,130,246,0.35)]">🕐</div>
+              <div>
+                <p className="text-[13px] font-semibold text-slate-700">Giờ mở cửa</p>
+                <p className="text-[12px] text-slate-400 mt-0.5">
+                  {cafe.isOpen24h ? '24/7 — Mở cả ngày lẫn đêm' : `${cafe.openTime || '07:00'} – ${cafe.closeTime || '22:00'}`}
+                </p>
+              </div>
+            </div>
+
+            {/* Amenities */}
+            {cafe.amenities?.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-4 rounded-full bg-gradient-to-b from-cyan-400 to-blue-500" />
+                  <p className="text-[13px] font-bold text-slate-800">Tiện ích</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {cafe.amenities.map((a, i) => (
+                    <span key={a} className={`
+                      flex items-center gap-1.5 px-3.5 py-2 rounded-xl
+                      text-[12px] font-semibold
+                      bg-gradient-to-r ${AM_COLORS[i % AM_COLORS.length]}
+                      border backdrop-blur-sm
+                      shadow-[0_2px_8px_rgba(0,0,0,0.06)]
+                      hover:scale-105 hover:shadow-md transition-all duration-150
+                    `}>
+                      {A_ICON[a] || '✓'} {A_LABEL[a] || a}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tags — Aurora UI */}
+            {cafe.tags?.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-4 rounded-full bg-gradient-to-b from-violet-400 to-pink-500" />
+                  <p className="text-[13px] font-bold text-slate-800">Đặc điểm</p>
+                </div>
+                <div className="relative p-3 rounded-2xl overflow-hidden">
+                  {/* Aurora blobs */}
+                  <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                    <div className="absolute -top-4 -left-4 w-24 h-24 bg-cyan-400/20 rounded-full blur-xl" />
+                    <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-violet-400/20 rounded-full blur-xl" />
+                    <div className="absolute top-1/2 left-1/3 w-16 h-16 bg-rose-400/15 rounded-full blur-lg" />
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm border border-white/40 rounded-2xl" />
+                  </div>
+                  <div className="relative flex flex-wrap gap-2">
+                    {cafe.tags.map((t, i) => {
+                      const { bg, sh } = TAG_COLORS[i % TAG_COLORS.length]
+                      return (
+                        <span key={t} className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold text-white ${bg} ${sh} hover:scale-105 hover:brightness-110 transition-all duration-150`}>
+                          {t}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Drink preview — horizontal scroll */}
+            {drinks.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-4 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
+                    <p className="text-[13px] font-bold text-slate-800">Xem trước menu</p>
+                  </div>
+                  <button onClick={() => setTab('Ảnh')}
+                    className="text-[11px] font-semibold text-blue-500 hover:text-blue-600">
+                    Xem tất cả →
+                  </button>
+                </div>
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+                  {drinks.map((url, i) => (
+                    <button key={i}
+                      onClick={() => setLightbox({ list: drinks, index: i })}
+                      className="flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.03] transition-all duration-200">
+                      <img src={url} alt={`Menu ${i + 1}`} loading="lazy"
+                        className="w-full h-full object-cover"
+                        onError={e => { e.target.src = PH[0] }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Reviews preview */}
+            {reviews.length > 0 && (
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-[13px] font-bold text-slate-800">Đánh giá gần đây</p>
+                  <button onClick={() => setTab('Đánh giá')}
+                    className="text-[11px] font-semibold text-blue-500 hover:text-blue-600">Xem tất cả →</button>
+                </div>
+                <div className="flex flex-col gap-2.5">
+                  {reviews.slice(0, 2).map((r, i) => <ReviewCard key={i} review={r} />)}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Đánh giá ── */}
+        {tab === 'Đánh giá' && (
+          <div className="fade-in flex flex-col gap-3">
+            {reviews.length === 0
+              ? <div className="py-10 text-center"><div className="text-3xl mb-2">💬</div><p className="text-[13px] text-slate-400">Chưa có đánh giá nào</p></div>
+              : reviews.map((r, i) => <ReviewCard key={i} review={r} />)
+            }
+          </div>
+        )}
+
+        {/* ── Ảnh ── */}
+        {tab === 'Ảnh' && (
+          <div className="fade-in flex flex-col gap-6">
+            {images.length > 0 && (
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">🖼 Ảnh quán ({images.length})</p>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                  {images.map((url, i) => (
+                    <button key={i} onClick={() => setLightbox({ list: allImgs, index: i })}
+                      className="aspect-square rounded-2xl overflow-hidden hover:opacity-90 hover:scale-[1.02] transition-all duration-200 shadow-sm hover:shadow-md">
+                      <img src={url} alt="" loading="lazy" className="w-full h-full object-cover"
+                        onError={e => { e.target.src = PH[0] }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {drinks.length > 0 && (
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">🥤 Đồ uống & Menu ({drinks.length})</p>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                  {drinks.map((url, i) => (
+                    <button key={i} onClick={() => setLightbox({ list: drinks, index: i })}
+                      className="aspect-square rounded-2xl overflow-hidden hover:opacity-90 hover:scale-[1.02] transition-all duration-200 shadow-sm hover:shadow-md">
+                      <img src={url} alt="" loading="lazy" className="w-full h-full object-cover"
+                        onError={e => { e.target.src = PH[0] }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── CTA ── */}
+      <div className="px-4 pb-8 flex gap-3 items-center">
+        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.address)}`}
+          target="_blank" rel="noopener noreferrer"
+          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-[14px] font-bold py-4 rounded-2xl text-center shadow-[0_4px_16px_rgba(59,130,246,0.4)] transition-all hover:-translate-y-0.5">
+          🗺 Xem đường đi
+        </a>
+        <div className="relative">
+          <button onClick={toggleFav}
+            className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95
+              ${fav ? 'bg-rose-500 border-rose-400 shadow-[0_4px_16px_rgba(244,63,94,0.5)]' : 'border-slate-200 bg-white hover:border-rose-300 hover:bg-rose-50'}`}>
+            <svg className={`w-6 h-6 transition-all duration-300 ${fav ? 'fill-white text-white scale-110' : 'fill-none text-slate-400'}`}
+              stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
+          {favAnim && fav && <span className="absolute inset-0 rounded-2xl bg-rose-400/30 animate-ping pointer-events-none" />}
+        </div>
+      </div>
+
+      {lightbox && <Lightbox images={lightbox.list} index={lightbox.index} onClose={() => setLightbox(null)} />}
+    </div>
+  )
+
+  /* ── Desktop: sidebar + detail ── */
+  if (isDesktop) return (
+    <div className="flex h-[calc(100vh-64px)]">
+      <aside className="w-[300px] flex-shrink-0 border-r border-slate-100 bg-white/80 backdrop-blur-sm overflow-y-auto no-scrollbar">
+        <div className="px-5 py-4 border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">
+          <p className="text-[14px] font-bold text-slate-800">Quán khác</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Hà Nội</p>
+        </div>
+        {nearby.map(item => (
+          <Link key={item._id} to={`/cafe/${item._id}`}
+            className={`flex items-center gap-4 px-5 py-4 border-b border-slate-100 transition-all duration-150
+              ${item._id === id ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-slate-50'}`}>
+            <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 shadow-sm">
+              <img src={item.images?.[0] || getImg(item._id)} alt={item.name} loading="lazy"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                onError={e => { e.target.src = PH[0] }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className={`text-[13px] font-bold truncate ${item._id === id ? 'text-blue-600' : 'text-slate-800'}`}>{item.name}</p>
+              <p className="text-[12px] text-amber-500 font-semibold mt-1">⭐ {item.rating?.toFixed(1)}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">📍 {item.district || 'Hà Nội'}</p>
+            </div>
+          </Link>
+        ))}
+      </aside>
+      {detail}
+    </div>
+  )
+
+  return detail
 }

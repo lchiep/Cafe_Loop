@@ -144,3 +144,17 @@ body {
 }
 .fade-up  { animation: fadeUp  0.4s cubic-bezier(0.16,1,0.3,1) both; }
 .fade-in  { animation: fadeIn  0.3s ease both; }
+
+/* ── Heart float-up animation ── */
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-32px) scale(1.4); }
+}
+
+/* ── Floating label input ── */
+.float-input-active label {
+  top: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #22d3ee;
+}

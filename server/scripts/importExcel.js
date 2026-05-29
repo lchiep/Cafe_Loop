@@ -16,34 +16,65 @@ async function run() {
     process.exit(1)
   }
 
-  const raw = XLSX.utils.sheet_to_json(ws, { defval: '' })
+  // Dùng sheet_to_json với header:1 để lấy theo index, tránh lỗi emoji trên Windows
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+  
+  // Row 0 = headers, rows 1+ = data
+  const headers = rows[0]
+  console.log('Headers count:', headers.length)
 
-  const cafes = raw
-    .filter(r => r['Tên quán']?.toString().trim())
-    .map(r => {
-      const parseImgs = (val) =>
-        String(val || '').split('\n').map(s => s.trim()).filter(Boolean)
+  // Tìm index cột theo keyword (không dùng emoji)
+  function findCol(keyword) {
+    return headers.findIndex(h => String(h || '').includes(keyword))
+  }
 
-      return {
-        name:        r['Tên quán']?.toString().trim(),
-        address:     r['Địa chỉ']?.toString().trim(),
-        district:    r['Quận/Huyện']?.toString().trim(),
-        rating:      parseFloat(r['Đánh giá'])   || 0,
-        ratingCount: parseInt(r['Lượt review'])   || 0,
-        minPrice:    parseInt(r['Giá từ (VNĐ)'])  || 0,
-        openTime:    String(r['Giờ mở']  || '').trim().slice(0, 5),
-        closeTime:   String(r['Giờ đóng'] || '').trim().slice(0, 5),
-        isOpen24h:   String(r['Mở 24h']).toLowerCase() === 'true',
-        featured:    String(r['Nổi bật']).toLowerCase() === 'true',
-        amenities:   String(r['Tiện ích'] || '').split(',').map(s => s.trim()).filter(Boolean),
-        tags:        String(r['Tags']     || '').split(',').map(s => s.trim()).filter(Boolean),
-        images:      parseImgs(r['🖼 Đường dẫn ảnh quán (tự động)']),
-        drinks:      parseImgs(r['🥤 Đường dẫn ảnh drink (tự động)']),
-        location:    { type: 'Point', coordinates: [105.8412, 21.0285] },
-      }
-    })
+  const COL = {
+    name:        findCol('Tên quán'),
+    address:     findCol('Địa chỉ'),
+    district:    findCol('Quận'),
+    rating:      findCol('Đánh giá'),
+    ratingCount: findCol('Lượt review'),
+    minPrice:    findCol('Giá từ'),
+    openTime:    findCol('Giờ mở'),
+    closeTime:   findCol('Giờ đóng'),
+    isOpen24h:   findCol('Mở 24h'),
+    featured:    findCol('Nổi bật'),
+    amenities:   findCol('Tiện ích'),
+    tags:        findCol('Tags'),
+    folder:      findCol('Folder'),
+    imgCount:    findCol('Số ảnh quán'),
+    drinkCount:  findCol('Số ảnh drink'),
+    images:      findCol('Đường dẫn ảnh quán'),
+    drinks:      findCol('Đường dẫn ảnh drink'),
+  }
 
-  console.log(`📋 Đọc được ${cafes.length} quán\n`)
+  console.log('Column mapping:')
+  Object.entries(COL).forEach(([k,v]) => console.log(`  ${k}: col ${v} (${headers[v] || 'NOT FOUND'})`))
+
+  const parseImgs = (val) =>
+    String(val || '').split('\n').map(s => s.trim()).filter(Boolean)
+
+  const cafes = rows.slice(1)
+    .filter(r => r[COL.name]?.toString().trim())
+    .map(r => ({
+      name:        String(r[COL.name]  || '').trim(),
+      address:     String(r[COL.address] || '').trim(),
+      district:    String(r[COL.district] || '').trim(),
+      rating:      parseFloat(r[COL.rating])   || 0,
+      ratingCount: parseInt(r[COL.ratingCount]) || 0,
+      minPrice:    parseInt(r[COL.minPrice])    || 0,
+      openTime:    String(r[COL.openTime]  || '').trim().slice(0, 5),
+      closeTime:   String(r[COL.closeTime] || '').trim().slice(0, 5),
+      isOpen24h:   String(r[COL.isOpen24h]).toLowerCase() === 'true',
+      featured:    String(r[COL.featured]).toLowerCase()  === 'true',
+      amenities:   String(r[COL.amenities] || '').split(',').map(s => s.trim()).filter(Boolean),
+      tags:        String(r[COL.tags]      || '').split(',').map(s => s.trim()).filter(Boolean),
+      images:      parseImgs(r[COL.images]),
+      drinks:      parseImgs(r[COL.drinks]),
+      location:    { type: 'Point', coordinates: [105.8412, 21.0285] },
+    }))
+
+  console.log(`\n📋 Đọc được ${cafes.length} quán\n`)
 
   await mongoose.connect(process.env.MONGO_URI)
   console.log('✅ MongoDB connected\n')
@@ -56,12 +87,11 @@ async function run() {
       if (exists) {
         await Cafe.findByIdAndUpdate(exists._id, { $set: cafe })
         updated++
-        console.log(`  🔄 ${cafe.name}: ${cafe.images.length} ảnh + ${cafe.drinks.length} drink`)
       } else {
         await Cafe.create(cafe)
         created++
-        console.log(`  ➕ ${cafe.name}: ${cafe.images.length} ảnh + ${cafe.drinks.length} drink`)
       }
+      console.log(`  ✅ ${cafe.name}: ${cafe.images.length} ảnh + ${cafe.drinks.length} drink`)
     } catch (err) {
       errors++
       console.error(`  ❌ ${cafe.name}: ${err.message}`)

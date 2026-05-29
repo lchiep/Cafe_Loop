@@ -4,7 +4,16 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useCafes } from '../hooks/useCafes'
 import CafeCard from '../components/cafe/CafeCard'
 import FilterPanel, { FilterToggleButton } from '../components/search/FilterPanel'
+import WeatherClock from '../components/ui/WeatherClock'
 import { SkeletonList } from '../components/ui/Skeleton'
+
+/* ── Encode path with spaces ── */
+function enc(path) {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  return path.split('/').map(s => encodeURIComponent(s)).join('/')
+}
+
 
 const SORT_OPTS = [
   { value: 'rating',  label: '⭐ Đánh giá' },
@@ -63,23 +72,55 @@ export default function ResultsPage() {
   return (
     <div className="fade-in">
 
-      {/* ── Sticky top bar ── */}
-      <div className="hero-bg sticky top-16 z-30 border-b border-white/10">
+      {/* ══ 1 KHỐI LIỀN: Weather + Search ══ */}
+      <div className="hero-bg border-b border-white/10">
+        {/* Weather clock */}
+        <WeatherClock />
+        {/* Divider nhẹ */}
+        <div className="h-px bg-white/8 mx-4"/>
+        {/* Search + filter bar */}
+        <div className="sticky top-16 z-30">
         <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center gap-3">
 
-          {/* Search display */}
-          <Link to="/" className="
-            flex-1 flex items-center gap-2.5
-            bg-white/10 border border-white/20 rounded-xl px-4 py-2.5
-            backdrop-blur-sm hover:bg-white/15 transition-colors
-          ">
+          {/* Search input */}
+          <form onSubmit={e => {
+            e.preventDefault()
+            const v = e.target.q.value.trim()
+            const n = new URLSearchParams(params)
+            if (v) n.set('q', v)
+            else n.delete('q')
+            setParams(n)
+          }}
+            className="flex-1 flex items-center gap-2.5 bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 backdrop-blur-sm focus-within:bg-white/15 focus-within:border-white/35 transition-colors">
             <svg className="w-3.5 h-3.5 text-white/50 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <span className="text-[13px] text-white/70 font-medium truncate">
-              {q || (lat ? 'Quán gần bạn' : 'Tất cả quán cafe')}
-            </span>
-          </Link>
+            <input name="q" defaultValue={q}
+              key={q} /* re-render khi q thay đổi từ bên ngoài */
+              placeholder="Tìm quán cafe..."
+              onChange={e => {
+                /* Xóa hết → reset ngay lập tức */
+                if (e.target.value === '') {
+                  const n = new URLSearchParams(params)
+                  n.delete('q')
+                  setParams(n)
+                }
+              }}
+              className="flex-1 bg-transparent text-[13px] text-white placeholder-white/40 font-medium outline-none"
+            />
+            {/* Clear button */}
+            {q && (
+              <button type="button" onClick={() => {
+                const n = new URLSearchParams(params)
+                n.delete('q')
+                setParams(n)
+              }} className="text-white/30 hover:text-white/70 transition-colors flex-shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            )}
+          </form>
 
           {/* Count */}
           <span className="glass px-3 py-2 rounded-xl text-[12px] font-bold text-white whitespace-nowrap border border-white/15">
@@ -110,6 +151,7 @@ export default function ResultsPage() {
           ))}
         </div>
       </div>
+      </div>{/* end 1 khối liền */}
 
       {/* ── Body ── */}
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -197,7 +239,7 @@ function ResultRow({ cafe, getImg }) {
       transition-all duration-250 hover:-translate-y-0.5 group
     ">
       <div className="w-[72px] h-[72px] rounded-xl overflow-hidden flex-shrink-0">
-        <img src={imgUrl} alt={cafe.name} loading="lazy"
+        <img src={enc(imgUrl)} alt={cafe.name} loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={e => e.target.src = PLACEHOLDER_IMGS[0]}
         />

@@ -6,6 +6,14 @@ import SearchBar from '../components/search/SearchBar'
 import CafeCard from '../components/cafe/CafeCard'
 import { SkeletonCard, SkeletonWide, SkeletonList } from '../components/ui/Skeleton'
 
+/* ── Encode path with spaces ── */
+function enc(path) {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  return path.split('/').map(s => encodeURIComponent(s)).join('/')
+}
+
+
 const CHIPS = [
   { label: 'Tất cả',        filter: {},                      icon: '✦' },
   { label: 'Gần đây',       filter: { sort: 'nearest' },     icon: '📍' },
@@ -206,7 +214,7 @@ function SuggestRow({ cafe }) {
     ">
       {/* Thumbnail */}
       <div className="w-[72px] h-[72px] rounded-xl overflow-hidden flex-shrink-0">
-        <img src={imgUrl} alt={cafe.name} loading="lazy"
+        <img src={enc(imgUrl)} alt={cafe.name} loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={e => e.target.src = PLACEHOLDER_IMGS[0]}
         />

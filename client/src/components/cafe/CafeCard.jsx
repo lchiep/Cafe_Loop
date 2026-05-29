@@ -2,6 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { favoriteApi } from '../../services/api'
 
+/* ── Encode path with spaces ── */
+function enc(path) {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  return path.split('/').map(s => encodeURIComponent(s)).join('/')
+}
+
+
 /* Ảnh placeholder đẹp từ Unsplash — cafe aesthetics */
 const PLACEHOLDER_IMGS = [
   'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&q=80',
@@ -47,7 +55,7 @@ export default function CafeCard({ cafe, size = 'normal' }) {
     >
       {/* Image */}
       <img
-        src={imageUrl} alt={cafe.name} loading="lazy"
+        src={enc(imageUrl)} alt={cafe.name} loading="lazy"
         className="absolute inset-0 w-full h-full object-cover
                    transition-transform duration-500 group-hover:scale-[1.04]"
         onError={e => { e.target.src = PLACEHOLDER_IMGS[0] }}

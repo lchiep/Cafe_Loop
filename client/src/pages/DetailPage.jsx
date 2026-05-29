@@ -13,6 +13,14 @@ const PH = [
   'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=800&q=80',
   'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80',
 ]
+
+/* ── Encode path: giữ nguyên / nhưng encode các ký tự đặc biệt ── */
+function enc(path) {
+  if (!path) return PH[0]
+  if (path.startsWith('http')) return path
+  // encode từng segment, giữ dấu /
+  return path.split('/').map(s => encodeURIComponent(s)).join('/')
+}
 const getImg = (id, i = 0) => {
   const h = id ? id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) : 0
   return PH[(h + i) % PH.length]
@@ -188,7 +196,7 @@ export default function DetailPage() {
       {/* ── Hero ── */}
       <div className="relative h-80 lg:h-[480px] overflow-hidden bg-slate-900">
         <img
-          src={images[imgIdx]} alt={cafe.name}
+          src={enc(images[imgIdx])} alt={cafe.name}
           className="w-full h-full object-cover transition-transform duration-700 scale-105 hover:scale-100"
           onError={e => { e.target.src = PH[0] }}
         />
@@ -315,7 +323,7 @@ export default function DetailPage() {
                 Left 50%  : 🥤 Drink (ảnh menu)
                 Right 50% : top 15% Tiện ích | mid 20% Tags | bottom 15% Map
             ══════════════ */}
-            <div className="flex gap-3 h-[420px] mb-3">
+            <div className="flex gap-3 h-[600px] mb-3">
 
               {/* ── LEFT: Drink carousel ── */}
               <div className="flex-1 relative overflow-hidden rounded-2xl
@@ -332,7 +340,7 @@ export default function DetailPage() {
                       className="absolute inset-0 w-full h-full"
                     >
                       <img
-                        src={drinks[drinkIdx]} alt={`Đồ uống ${drinkIdx + 1}`}
+                        src={enc(drinks[drinkIdx])} alt={`Đồ uống ${drinkIdx + 1}`}
                         className="w-full h-full object-cover transition-all duration-500"
                         onError={e => { e.target.src = PH[0] }}
                       />
@@ -399,14 +407,14 @@ export default function DetailPage() {
                           <button key={i}
                             onClick={e => { e.stopPropagation(); setDrinkIdx(i) }}
                             className={`
-                              flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden
+                              flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden
                               border-2 transition-all duration-200
                               ${i === drinkIdx
                                 ? 'border-white scale-105 shadow-[0_2px_8px_rgba(255,255,255,0.3)]'
                                 : 'border-white/30 opacity-60 hover:opacity-90'
                               }
                             `}>
-                            <img src={url} alt="" loading="lazy" className="w-full h-full object-cover"
+                            <img src={enc(url)} alt="" loading="lazy" className="w-full h-full object-cover"
                               onError={e => { e.target.src = PH[0] }}/>
                           </button>
                         ))}
@@ -489,29 +497,58 @@ export default function DetailPage() {
                   </div>
                 </div>
 
-                {/* BOTTOM: Map CTA */}
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.address)}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="relative overflow-hidden rounded-2xl p-3.5 flex-1
-                    bg-gradient-to-r from-blue-500/80 to-cyan-500/80
-                    backdrop-blur-xl
-                    border border-white/25
-                    shadow-[0_4px_24px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.3)]
-                    hover:from-blue-500 hover:to-cyan-500
-                    hover:shadow-[0_6px_28px_rgba(59,130,246,0.5)]
-                    transition-all duration-300 group
-                    flex items-center justify-center gap-2
-                  "
-                >
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute -top-4 right-0 w-20 h-20 bg-white/10 rounded-full blur-xl"/>
+                {/* BOTTOM: Map CTA + Heart */}
+                <div className="flex gap-2 flex-1">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.address)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="relative overflow-hidden rounded-2xl p-3.5
+                      bg-gradient-to-r from-blue-500/80 to-cyan-500/80
+                      backdrop-blur-xl
+                      border border-white/25
+                      shadow-[0_4px_24px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.3)]
+                      hover:from-blue-500 hover:to-cyan-500
+                      hover:shadow-[0_6px_28px_rgba(59,130,246,0.5)]
+                      transition-all duration-300
+                      flex items-center justify-center gap-2
+                      flex-[3]
+                    "
+                  >
+                    <span className="text-lg">🗺</span>
+                    <span className="relative text-[13px] font-black text-white drop-shadow">Xem đường đi</span>
+                  </a>
+
+                  {/* Heart button */}
+                  <div className="relative flex-1">
+                    <button onClick={toggleFav}
+                      className={`
+                        w-full h-full rounded-2xl flex items-center justify-center
+                        border backdrop-blur-xl transition-all duration-300
+                        hover:scale-105 active:scale-95
+                        ${fav
+                          ? 'bg-rose-500/80 border-rose-400/50 shadow-[0_4px_20px_rgba(244,63,94,0.5)]'
+                          : 'bg-white/10 border-white/25 hover:bg-rose-500/20 hover:border-rose-400/40'
+                        }
+                      `}>
+                      <svg className={`w-6 h-6 transition-all duration-300 ${fav ? 'fill-white text-white scale-110' : 'fill-none text-white'}`}
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                      </svg>
+                    </button>
+                    {favAnim && fav && <span className="absolute inset-0 rounded-2xl bg-rose-400/30 animate-ping pointer-events-none"/>}
+                    {favAnim && fav && (
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        {['❤️','💕','✨'].map((em, i) => (
+                          <span key={i} className="absolute text-[14px]"
+                            style={{ top: '-8px', left: `${25 + i*20}%`, animation: `floatUp 0.6s ease-out ${i*0.08}s forwards` }}>
+                            {em}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <span className="text-lg">🗺</span>
-                  <span className="relative text-[13px] font-black text-white drop-shadow">
-                    Xem đường đi
-                  </span>
-                </a>
+                </div>
 
               </div>
             </div>
@@ -559,7 +596,7 @@ export default function DetailPage() {
                   {images.map((url, i) => (
                     <button key={i} onClick={() => setLightbox({ list: allImgs, index: i })}
                       className="aspect-square rounded-2xl overflow-hidden hover:opacity-90 hover:scale-[1.02] transition-all duration-200 shadow-sm hover:shadow-md">
-                      <img src={url} alt="" loading="lazy" className="w-full h-full object-cover"
+                      <img src={enc(url)} alt="" loading="lazy" className="w-full h-full object-cover"
                         onError={e => { e.target.src = PH[0] }} />
                     </button>
                   ))}
@@ -573,7 +610,7 @@ export default function DetailPage() {
                   {drinks.map((url, i) => (
                     <button key={i} onClick={() => setLightbox({ list: drinks, index: i })}
                       className="aspect-square rounded-2xl overflow-hidden hover:opacity-90 hover:scale-[1.02] transition-all duration-200 shadow-sm hover:shadow-md">
-                      <img src={url} alt="" loading="lazy" className="w-full h-full object-cover"
+                      <img src={enc(url)} alt="" loading="lazy" className="w-full h-full object-cover"
                         onError={e => { e.target.src = PH[0] }} />
                     </button>
                   ))}
@@ -582,27 +619,6 @@ export default function DetailPage() {
             )}
           </div>
         )}
-      </div>
-
-      {/* ── CTA ── */}
-      <div className="px-4 pb-8 flex gap-3 items-center">
-        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.address)}`}
-          target="_blank" rel="noopener noreferrer"
-          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-[14px] font-bold py-4 rounded-2xl text-center shadow-[0_4px_16px_rgba(59,130,246,0.4)] transition-all hover:-translate-y-0.5">
-          🗺 Xem đường đi
-        </a>
-        <div className="relative">
-          <button onClick={toggleFav}
-            className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95
-              ${fav ? 'bg-rose-500 border-rose-400 shadow-[0_4px_16px_rgba(244,63,94,0.5)]' : 'border-slate-200 bg-white hover:border-rose-300 hover:bg-rose-50'}`}>
-            <svg className={`w-6 h-6 transition-all duration-300 ${fav ? 'fill-white text-white scale-110' : 'fill-none text-slate-400'}`}
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
-          {favAnim && fav && <span className="absolute inset-0 rounded-2xl bg-rose-400/30 animate-ping pointer-events-none" />}
-        </div>
       </div>
 
       {lightbox && <Lightbox images={lightbox.list} index={lightbox.index} onClose={() => setLightbox(null)} />}
@@ -622,7 +638,7 @@ export default function DetailPage() {
             className={`flex items-center gap-4 px-5 py-4 border-b border-slate-100 transition-all duration-150
               ${item._id === id ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-slate-50'}`}>
             <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 shadow-sm">
-              <img src={item.images?.[0] || getImg(item._id)} alt={item.name} loading="lazy"
+              <img src={enc(item.images?.[0] || getImg(item._id))} alt={item.name} loading="lazy"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                 onError={e => { e.target.src = PH[0] }} />
             </div>

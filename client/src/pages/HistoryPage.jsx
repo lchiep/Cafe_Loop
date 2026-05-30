@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { encImg } from '../utils/encImg'
+// encImg inline
+function encImg(p) { if (!p) return null; if (p.startsWith('http')) return p; return p.split('/').map((s,i) => i===0&&s===''?'':encodeURIComponent(s)).join('/') }
 
 const PH = [
   'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&q=80',
@@ -129,4 +130,3 @@ export default function HistoryPage() {
     </div>
   )
 }
-

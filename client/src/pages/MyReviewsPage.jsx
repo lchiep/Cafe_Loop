@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { encImg } from '../utils/encImg'
+// encImg inline
+function encImg(p) { if (!p) return null; if (p.startsWith('http')) return p; return p.split('/').map((s,i) => i===0&&s===''?'':encodeURIComponent(s)).join('/') }
 
 const PH = [
   'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80',

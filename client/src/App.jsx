@@ -10,6 +10,9 @@ const DetailPage    = lazy(() => import('./pages/DetailPage'))
 const ProfilePage   = lazy(() => import('./pages/ProfilePage'))
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage'))
 const LoginPage     = lazy(() => import('./pages/LoginPage'))
+const HistoryPage   = lazy(() => import('./pages/HistoryPage'))
+const MyReviewsPage = lazy(() => import('./pages/MyReviewsPage'))
+const SettingsPage  = lazy(() => import('./pages/SettingsPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,18 +38,18 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Login — full page, không có layout */}
             <Route path="/login" element={
               <Suspense fallback={<PageLoader/>}><LoginPage /></Suspense>
             }/>
-
-            {/* App routes — có Header + Sidebar */}
             <Route element={<AppLayout />}>
               <Route index path="/" element={<Suspense fallback={<PageLoader/>}><HomePage /></Suspense>} />
               <Route path="/results" element={<Suspense fallback={<PageLoader/>}><ResultsPage /></Suspense>} />
               <Route path="/cafe/:id" element={<Suspense fallback={<PageLoader/>}><DetailPage /></Suspense>} />
               <Route path="/profile" element={<Suspense fallback={<PageLoader/>}><ProfilePage /></Suspense>} />
               <Route path="/favorites" element={<Suspense fallback={<PageLoader/>}><FavoritesPage /></Suspense>} />
+              <Route path="/history" element={<Suspense fallback={<PageLoader/>}><HistoryPage /></Suspense>} />
+              <Route path="/my-reviews" element={<Suspense fallback={<PageLoader/>}><MyReviewsPage /></Suspense>} />
+              <Route path="/settings" element={<Suspense fallback={<PageLoader/>}><SettingsPage /></Suspense>} />
             </Route>
           </Routes>
         </BrowserRouter>

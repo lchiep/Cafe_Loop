@@ -1,14 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { favoriteApi } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
+import { encImg } from '../../utils/encImg'
 
 /* ── helpers ── */
-function enc(p) {
-  if (!p) return null
-  if (p.startsWith('http')) return p
-  return p.split('/').map((s,i) => i===0&&s===''?'':encodeURIComponent(s)).join('/')
-}
 
 const PH = [
   'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80',
@@ -107,8 +103,8 @@ export default function FeaturedCard({ cafe }) {
   const [isFav,     setIsFav]     = useState(false)
   const [favLoading,setFavLoading]= useState(false)
 
-  const images = cafe.images?.length ? cafe.images.map(enc) : [ph(cafe._id)]
-  const drinks = cafe.drinks?.length  ? cafe.drinks.map(enc) : []
+  const images = cafe.images?.length ? cafe.images.map(encImg) : [ph(cafe._id)]
+  const drinks = cafe.drinks?.length  ? cafe.drinks.map(encImg) : []
   const isOpen = checkOpen(cafe)
 
   /* Auto-advance slideshow every 4s */

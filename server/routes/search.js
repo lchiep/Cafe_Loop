@@ -1,45 +1,62 @@
 const router = require('express').Router()
 const Cafe   = require('../models/Cafe')
-const { cacheMiddleware } = require('../middleware/cache')
 
 /**
- * GET /api/search?q=hideout&lng=105.85&lat=21.02
- * Full-text search + optional geo sort
- * Cache: 2 phút
+ * GET /api/search?q=xofa
+ * - Nếu q >= 3 ký tự: dùng MongoDB $text full-text search (nhanh, có index)
+ * - Nếu q < 3 ký tự: dùng regex prefix match (cho phép tìm từ ký tự đầu tiên)
+ * Không cache để luôn fresh
  */
-router.get('/', cacheMiddleware(120), async (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const { q = '', lng, lat, limit = 20 } = req.query
+    const { q = '', limit = 8 } = req.query
+    const trimmed = q.trim()
 
-    if (q.length < 2) return res.json({ cafes: [] })
-
-    /* Full-text search via MongoDB text index */
-    const textFilter = { $text: { $search: q } }
+    if (!trimmed) return res.json({ cafes: [], query: '' })
 
     let cafes
-    if (lng && lat) {
-      cafes = await Cafe.aggregate([
-        { $match: textFilter },
-        { $addFields: { score: { $meta: 'textScore' } } },
-        {
-          $geoNear: {
-            near:          { type: 'Point', coordinates: [+lng, +lat] },
-            distanceField: 'distance',
-            spherical:     true,
-          },
-        },
-        { $sort:  { distance: 1 } },
-        { $limit: +limit },
-      ])
+
+    if (trimmed.length >= 3) {
+      // Full-text search (dùng text index — nhanh nhất)
+      try {
+        cafes = await Cafe
+          .find(
+            { $text: { $search: trimmed } },
+            { score: { $meta: 'textScore' } }
+          )
+          .sort({ score: { $meta: 'textScore' } })
+          .limit(+limit)
+          .lean()
+      } catch {
+        // Fallback nếu text index chưa có
+        cafes = []
+      }
+
+      // Nếu text search không ra kết quả, fallback regex
+      if (!cafes.length) {
+        cafes = await Cafe
+          .find({ name: { $regex: trimmed, $options: 'i' } })
+          .limit(+limit)
+          .lean()
+      }
     } else {
+      // < 3 ký tự: regex prefix trên name, address, district
+      const re = new RegExp(trimmed, 'i')
       cafes = await Cafe
-        .find(textFilter, { score: { $meta: 'textScore' } })
-        .sort({ score: { $meta: 'textScore' } })
+        .find({
+          $or: [
+            { name:     { $regex: re } },
+            { address:  { $regex: re } },
+            { district: { $regex: re } },
+            { tags:     { $regex: re } },
+          ]
+        })
+        .sort({ rating: -1 })
         .limit(+limit)
         .lean()
     }
 
-    res.json({ cafes, query: q })
+    res.json({ cafes, query: trimmed })
   } catch (err) {
     next(err)
   }

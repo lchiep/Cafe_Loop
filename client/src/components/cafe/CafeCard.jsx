@@ -1,13 +1,6 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { favoriteApi } from '../../services/api'
-
-/* ── Encode path with spaces ── */
-function enc(path) {
-  if (!path) return null
-  if (path.startsWith('http')) return path
-  return path.split('/').map(s => encodeURIComponent(s)).join('/')
-}
+import { useAuth } from '../../context/AuthContext'
+import { encImg as enc } from '../../utils/encImg'
 
 
 /* Ảnh placeholder đẹp từ Unsplash — cafe aesthetics */
@@ -27,16 +20,16 @@ function getPlaceholder(id) {
 
 export default function CafeCard({ cafe, size = 'normal' }) {
   const navigate = useNavigate()
-  const [fav, setFav] = useState(cafe.isFavorite ?? false)
+  const { user, isFavorite, toggleFavorite } = useAuth()
+  const fav = isFavorite(cafe._id)
 
   const imageUrl = cafe.images?.[0] || getPlaceholder(cafe._id)
   const isOpen   = checkOpen(cafe)
 
   async function toggleFav(e) {
     e.stopPropagation()
-    setFav(f => !f)
-    try { await favoriteApi.toggle(cafe._id) }
-    catch { setFav(f => !f) }
+    if (!user) { navigate('/login'); return }
+    await toggleFavorite(cafe._id)
   }
 
   const isWide = size === 'wide'

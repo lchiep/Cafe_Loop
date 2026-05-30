@@ -3,8 +3,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useCafes } from '../hooks/useCafes'
 import SearchBar from '../components/search/SearchBar'
+import CafeCard from '../components/cafe/CafeCard'
 import FeaturedCard from '../components/cafe/FeaturedCard'
-import { SkeletonList } from '../components/ui/Skeleton'
+import { SkeletonCard, SkeletonWide, SkeletonList } from '../components/ui/Skeleton'
 import { encImg } from '../utils/encImg'
 
 const PH_IMGS = [
@@ -237,12 +238,21 @@ export default function HomePage() {
                 <p className="text-sm text-slate-400">Thử tìm với từ khóa khác nhé</p>
               </div>
             ) : (
-              <FeaturedGrid data={searchResults.data} loading={searchResults.isLoading}/>
+              <div className="flex flex-col gap-4">
+                {searchResults.isLoading
+                  ? <div className="w-full"><SkeletonWide/></div>
+                  : searchResults.data?.cafes?.slice(0,3).map((cafe, i) => (
+                      <div key={cafe._id} className="w-full fade-up" style={{ animationDelay: `${i*80}ms` }}>
+                        <FeaturedCard cafe={cafe}/>
+                      </div>
+                    ))
+                }
+              </div>
             )}
           </section>
 
         ) : (
-          /* ══ NỔI BẬT HÔM NAY ══ */
+          /* ══ NỔI BẬT HÔM NAY — layout gốc ══ */
           <section className="pt-8 pb-6 fade-in">
             <div className="flex justify-between items-end mb-5">
               <div>
@@ -253,7 +263,26 @@ export default function HomePage() {
                 Xem thêm →
               </Link>
             </div>
-            <FeaturedGrid data={featured.data} loading={featured.isLoading}/>
+
+            {isDesktop ? (
+              <div className="grid grid-cols-3 gap-5">
+                {featured.isLoading
+                  ? [1,2,3].map(i => <SkeletonWide key={i}/>)
+                  : featured.data?.cafes?.slice(0,3).map((cafe, i) => (
+                      <div key={cafe._id} className="fade-up" style={{ animationDelay: `${i*80}ms` }}>
+                        <CafeCard cafe={cafe} size="wide"/>
+                      </div>
+                    ))
+                }
+              </div>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4">
+                {featured.isLoading
+                  ? [1,2,3].map(i => <SkeletonCard key={i}/>)
+                  : featured.data?.cafes?.map(cafe => <CafeCard key={cafe._id} cafe={cafe}/>)
+                }
+              </div>
+            )}
           </section>
         )}
 

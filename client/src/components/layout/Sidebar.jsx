@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 
 const NAV = [
@@ -9,17 +10,26 @@ const NAV = [
 ]
 
 const FILTERS = [
-  { label: 'Tất cả',       icon: '✦' },
-  { label: 'Gần đây',      icon: '📍' },
-  { label: 'Yên tĩnh',     icon: '🤫' },
-  { label: 'Có Wi-Fi',     icon: '📶' },
-  { label: 'Ngoài trời',   icon: '🌿' },
-  { label: 'Mở 24h',       icon: '🕐' },
-  { label: 'Pet-friendly',  icon: '🐾' },
+  { label: 'Tất cả',      icon: '✦', params: {} },
+  { label: 'Gần đây',     icon: '📍', params: { sort: 'nearest' } },
+  { label: 'Yên tĩnh',    icon: '🤫', params: { amenities: 'outdoor' } },
+  { label: 'Có Wi-Fi',    icon: '📶', params: { amenities: 'wifi' } },
+  { label: 'Ngoài trời',  icon: '🌿', params: { amenities: 'outdoor' } },
+  { label: 'Mở 24h',      icon: '🕐', params: { open24h: 'true' } },
+  { label: 'Pet-friendly', icon: '🐾', params: { amenities: 'pet' } },
 ]
 
 export default function Sidebar() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const [activeFilter, setActiveFilter] = useState('Tất cả')
+
+  function handleFilter(filter) {
+    setActiveFilter(filter.label)
+    const p = new URLSearchParams(filter.params)
+    navigate(filter.label === 'Tất cả' ? '/results' : `/results?${p.toString()}`)
+  }
+
   return (
     <aside className="
       hidden lg:flex flex-col w-[220px] xl:w-[240px] flex-shrink-0
@@ -42,12 +52,18 @@ export default function Sidebar() {
       <div className="my-4 h-px bg-slate-100 mx-3" />
 
       <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 px-3 pb-2">Lọc nhanh</p>
-      {FILTERS.map(({ icon, label }) => (
-        <button key={label} className="
-          flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-medium text-left
-          text-slate-500 hover:bg-slate-50 hover:text-blue-600 transition-all duration-150
-        ">
-          <span className="text-sm">{icon}</span>{label}
+      {FILTERS.map((filter) => (
+        <button key={filter.label}
+          onClick={() => handleFilter(filter)}
+          className={`
+            flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-medium text-left
+            transition-all duration-150
+            ${activeFilter === filter.label
+              ? 'bg-blue-50 text-blue-600 font-semibold'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600'
+            }
+          `}>
+          <span className="text-sm">{filter.icon}</span>{filter.label}
         </button>
       ))}
 

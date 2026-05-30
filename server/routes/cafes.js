@@ -25,6 +25,7 @@ router.get('/', cacheMiddleware(120), async (req, res, next) => {
       price,
       lng, lat,
       featured,
+      q,
       limit = 20,
       page  = 1,
     } = req.query
@@ -38,6 +39,17 @@ router.get('/', cacheMiddleware(120), async (req, res, next) => {
     if (featured === 'true') filter.featured = true
     if (amenities) {
       filter.amenities = { $in: amenities.split(',') }
+    }
+
+    /* Search query — regex for partial match */
+    if (q && q.trim()) {
+      const re = new RegExp(q.trim(), 'i')
+      filter.$or = [
+        { name:     { $regex: re } },
+        { address:  { $regex: re } },
+        { district: { $regex: re } },
+        { tags:     { $regex: re } },
+      ]
     }
 
     /* Price filter: minPrice field */
